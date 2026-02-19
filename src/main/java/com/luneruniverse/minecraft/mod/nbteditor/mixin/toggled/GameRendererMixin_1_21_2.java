@@ -1,17 +1,15 @@
 package com.luneruniverse.minecraft.mod.nbteditor.mixin.toggled;
 
-import java.io.IOException;
-
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import com.luneruniverse.minecraft.mod.nbteditor.misc.Shaders;
+import com.luneruniverse.minecraft.mod.nbteditor.multiversion.Reflection;
 import com.luneruniverse.minecraft.mod.nbteditor.util.MainUtil;
 
 import net.minecraft.client.gl.ShaderLoader;
-import net.minecraft.client.gl.ShaderProgramKey;
 import net.minecraft.client.render.GameRenderer;
 import net.minecraft.resource.LifecycledResourceManager;
 import net.minecraft.resource.LifecycledResourceManagerImpl;
@@ -25,9 +23,25 @@ public class GameRendererMixin_1_21_2 {
 		LifecycledResourceManager manager = new LifecycledResourceManagerImpl(ResourceType.CLIENT_RESOURCES,
 				MainUtil.client.getResourcePackManager().createResourcePacks());
 		try {
-			MainUtil.client.getShaderLoader().preload(manager, Shaders.SHADERS.stream()
-					.map(shader -> (ShaderProgramKey) shader.key.mcKey()).toArray(ShaderProgramKey[]::new));
-		} catch (IOException | ShaderLoader.LoadException e) {
+			Class<?> keyClass = Reflection.getClass("net.minecraft.class_10156");
+			int size = Shaders.SHADERS.size();
+			Object typedKeys = java.lang.reflect.Array.newInstance(keyClass, size);
+			for (int i = 0; i < size; i++) {
+				java.lang.reflect.Array.set(typedKeys, i, Shaders.SHADERS.get(i).key.mcKey());
+			}
+			java.lang.reflect.Method preloadMethod = null;
+			for (java.lang.reflect.Method m : ShaderLoader.class.getMethods()) {
+				if (m.getName().equals("preload")) {
+					preloadMethod = m;
+					break;
+				}
+			}
+			if (preloadMethod == null)
+				throw new RuntimeException("Could not find ShaderLoader#preload method");
+			preloadMethod.invoke(MainUtil.client.getShaderLoader(), manager, typedKeys);
+		} catch (java.lang.reflect.InvocationTargetException e) {
+			throw new RuntimeException("Could not preload shaders for loading UI", e.getCause());
+		} catch (Exception e) {
 			throw new RuntimeException("Could not preload shaders for loading UI", e);
 		} finally {
 			manager.close();

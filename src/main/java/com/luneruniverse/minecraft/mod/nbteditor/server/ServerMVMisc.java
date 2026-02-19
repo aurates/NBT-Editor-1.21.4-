@@ -57,9 +57,11 @@ public class ServerMVMisc {
 	
 	private static final Supplier<Reflection.MethodInvoker> EntityType_create =
 			Reflection.getOptionalMethod(EntityType.class, "method_5883", MethodType.methodType(Entity.class, World.class));
+	private static final Supplier<Reflection.MethodInvoker> EntityType_create_withReason =
+			Reflection.getOptionalMethod(EntityType.class, "method_5883", MethodType.methodType(Entity.class, World.class, SpawnReason.class));
 	public static Entity createEntity(EntityType<?> entityType, World world) {
 		return Version.<Entity>newSwitch()
-				.range("1.21.2", null, () -> entityType.create(world, SpawnReason.COMMAND))
+				.range("1.21.2", null, () -> EntityType_create_withReason.get().invoke(entityType, world, SpawnReason.COMMAND))
 				.range(null, "1.21.1", () -> EntityType_create.get().invoke(entityType, world))
 				.get();
 	}
