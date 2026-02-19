@@ -14,7 +14,6 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 
 import net.minecraft.registry.DynamicRegistryManager;
-import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.entry.RegistryEntry;
@@ -41,7 +40,7 @@ public class RegistryCache {
 			return null;
 		
 		return Version.<Optional<RegistryEntry.Reference<T>>>newSwitch()
-				.range("1.21.2", null, () -> registry.getEntry(ref.registryKey().getValue()))
+				.range("1.21.2", null, () -> Registry_getEntry.get().invoke(registry, ref.registryKey().getValue()))
 				.range(null, "1.21.1", () -> Registry_getEntry.get().invoke(registry, ref.registryKey().getValue()))
 				.get()
 				.orElse(null);
@@ -52,7 +51,7 @@ public class RegistryCache {
 	private static final LoadingCache<Registry<?>, Boolean> staticRegistries = CacheBuilder.newBuilder().build(
 			CacheLoader.from(registry -> {
 				return Version.<Boolean>newSwitch()
-						.range("1.21.2", null, () -> Registries.REGISTRIES.get(registry.getKey().getValue()) != null)
+						.range("1.21.2", null, () -> MVRegistry.REGISTRIES.get(((RegistryKey<?>) Registry_getKey.get().invoke(registry)).getValue()) != null)
 						.range(null, "1.21.1", () -> MVRegistry.REGISTRIES.get(((RegistryKey<?>) Registry_getKey.get().invoke(registry)).getValue()) != null)
 						.get();
 			}));
@@ -82,7 +81,7 @@ public class RegistryCache {
 			if (registryManager == null)
 				return Optional.empty();
 			return Version.<Optional<? extends Registry<?>>>newSwitch()
-					.range("1.21.2", null, () -> registryManager.getOptional(RegistryKey.ofRegistry(id)))
+					.range("1.21.2", null, () -> DynamicRegistryManager_getOptional.get().invoke(registryManager, RegistryKey.ofRegistry(id)))
 					.range(null, "1.21.1", () -> DynamicRegistryManager_getOptional.get().invoke(registryManager, RegistryKey.ofRegistry(id)))
 					.get();
 		});

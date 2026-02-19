@@ -6,6 +6,9 @@
 name: build
 on: [pull_request, push]
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-24.04
@@ -30,3 +33,17 @@ jobs:
           path: |
             build/libs/nbteditor-*-*.jar
             build/devlibs/nbteditor-*-*-dev.jar
+      - name: copy jar to project root
+        if: github.event_name == 'push'
+        run: |
+          JAR=$(ls build/libs/nbteditor-*-*.jar | grep -v dev | head -1)
+          cp "$JAR" nbteditor-1.21.1.jar
+          echo "Copied $JAR to nbteditor-1.21.1.jar"
+      - name: commit jar to repository
+        if: github.event_name == 'push'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add nbteditor-1.21.1.jar
+          git diff --cached --exit-code || git commit -m "Add compiled jar for Fabric 1.21.1 [skip ci]"
+          git push
