@@ -1,5 +1,5 @@
 plugins {
-	id 'fabric-loom' version '1.15-SNAPSHOT'
+	id 'fabric-loom' version '1.15.4'
 	id 'maven-publish'
 }
 
@@ -11,8 +11,6 @@ base {
 }
 
 repositories {
-	// Loom adds the essential repositories automatically.
-	// Extra repository: Modrinth maven
 	exclusiveContent {
 		forRepository {
 			maven {
@@ -31,34 +29,27 @@ loom {
 }
 
 dependencies {
-	// Versions are in gradle.properties
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
 	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
 	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
-	// Fabric API
-	// Exclude deprecated module to avoid missing-artifact failures on some versions
 	modImplementation("net.fabricmc.fabric-api:fabric-api:${project.fabric_version}") {
 		exclude group: "net.fabricmc.fabric-api", module: "fabric-api-deprecated"
 	}
 
-	// Local dev jar from the 1.17 subproject output (used by merge tasks below)
 	implementation files("nbteditor_1.17/build/devlibs/nbteditor_1.17-0.0.0-dev.jar")
 
-	// Mod dependencies from Modrinth maven
 	modImplementation "maven.modrinth:modmenu:11.0.3"
 	modImplementation "maven.modrinth:nbt-autocomplete:1.3.10-fabric-1.21.1"
 }
 
 processResources {
 	inputs.property "version", project.version
-
 	filesMatching("fabric.mod.json") {
 		expand "version": inputs.properties.version
 	}
 }
 
-// Minecraft 1.21.x targets Java 21
 tasks.withType(JavaCompile).configureEach {
 	it.options.release = 21
 }
@@ -75,10 +66,8 @@ import groovy.json.JsonSlurper
 import groovy.json.JsonOutput
 
 def checkRefmap(Map json) {
-	if (!(json.keySet() - ["mappings", "data"]).isEmpty())
-		return false
-	if (!(json.data.keySet() - ["named:intermediary"]).isEmpty())
-		return false
+	if (!(json.keySet() - ["mappings", "data"]).isEmpty()) return false
+	if (!(json.data.keySet() - ["named:intermediary"]).isEmpty()) return false
 	return true
 }
 
@@ -90,19 +79,15 @@ task mergeRefmapJson {
 		File mainRefmap = file("build/classes/java/main/nbteditor-refmap.json")
 		File additionalRefmap = file("nbteditor_1.17/build/classes/java/main/nbteditor_1.17-refmap.json")
 
-		if (!mainRefmap.exists())
-			throw new GradleException("Missing main refmap!")
-		if (!additionalRefmap.exists())
-			throw new GradleException("Missing 1.17 refmap!")
+		if (!mainRefmap.exists()) throw new GradleException("Missing main refmap!")
+		if (!additionalRefmap.exists()) throw new GradleException("Missing 1.17 refmap!")
 
 		def parser = new JsonSlurper()
 		def mainJson = parser.parse(mainRefmap)
 		def additionalJson = parser.parse(additionalRefmap)
 
-		if (!checkRefmap(mainJson))
-			throw new GradleException("Main refmap is invalid!")
-		if (!checkRefmap(additionalJson))
-			throw new GradleException("1.17 refmap is invalid!")
+		if (!checkRefmap(mainJson)) throw new GradleException("Main refmap is invalid!")
+		if (!checkRefmap(additionalJson)) throw new GradleException("1.17 refmap is invalid!")
 
 		mainJson.mappings += additionalJson.mappings
 		mainJson.data["named:intermediary"] += additionalJson.data["named:intermediary"]
@@ -160,9 +145,7 @@ publishing {
 			from components.java
 		}
 	}
-
 	repositories {
-		// add publishing repositories if needed
 	}
 }
 
