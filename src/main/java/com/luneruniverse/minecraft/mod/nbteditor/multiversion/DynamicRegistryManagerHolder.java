@@ -41,6 +41,12 @@ public class DynamicRegistryManagerHolder {
 	
 	private static final Supplier<Reflection.MethodInvoker> RegistryLoader_loadFromResource =
 			Reflection.getOptionalMethod(RegistryLoader.class, "method_56515", MethodType.methodType(DynamicRegistryManager.Immutable.class, ResourceManager.class, DynamicRegistryManager.class, List.class));
+	private static final Supplier<Reflection.MethodInvoker> RegistryLoader_loadFromResource_1_21_2 =
+			Reflection.getOptionalMethod(RegistryLoader.class, "method_56515", MethodType.methodType(DynamicRegistryManager.Immutable.class, ResourceManager.class, List.class, List.class));
+	private static final Supplier<Reflection.MethodInvoker> TagGroupLoader_startReload =
+			Reflection.getOptionalMethod(TagGroupLoader.class, "method_61307", MethodType.methodType(List.class, ResourceManager.class, DynamicRegistryManager.class));
+	private static final Supplier<Reflection.MethodInvoker> TagGroupLoader_collectRegistries =
+			Reflection.getOptionalMethod(TagGroupLoader.class, "method_61313", MethodType.methodType(List.class, DynamicRegistryManager.Immutable.class, List.class));
 	private static CompletableFuture<DynamicRegistryManager> loadDefaultManagerImpl() {
 		CompletableFuture<DynamicRegistryManager> future = new CompletableFuture<>();
 		MixinLink.executeCrashableTask(() -> {
@@ -61,11 +67,11 @@ public class DynamicRegistryManagerHolder {
 			
 			DynamicRegistryManager.Immutable dynamicRegistries = Version.<DynamicRegistryManager.Immutable>newSwitch()
 					.range("1.21.2", null, () -> {
-						List<Registry.PendingTagLoad<?>> tags = TagGroupLoader.startReload(resourceManager, combinedRegistries.get(ServerDynamicRegistryType.STATIC));
+						List<?> tags = TagGroupLoader_startReload.get().invoke(null, resourceManager, combinedRegistries.get(ServerDynamicRegistryType.STATIC));
 						DynamicRegistryManager.Immutable preceding = combinedRegistries.getPrecedingRegistryManagers(ServerDynamicRegistryType.RELOADABLE);
-						List<RegistryWrapper.Impl<?>> loadedRegistries = TagGroupLoader.collectRegistries(preceding, tags);
+						List<?> loadedRegistries = TagGroupLoader_collectRegistries.get().invoke(null, preceding, tags);
 						
-						return RegistryLoader.loadFromResource(resourceManager, loadedRegistries, entries);
+						return RegistryLoader_loadFromResource_1_21_2.get().invoke(null, resourceManager, loadedRegistries, entries);
 					})
 					.range("1.20.5", "1.21.1", () -> RegistryLoader_loadFromResource.get().invoke(null, resourceManager, combinedRegistries.getCombinedRegistryManager(), entries))
 					.get();

@@ -5,9 +5,7 @@ import java.util.function.Supplier;
 
 import com.google.common.collect.ImmutableMap;
 
-import net.minecraft.client.gl.Defines;
 import net.minecraft.client.gl.ShaderProgram;
-import net.minecraft.client.gl.ShaderProgramKey;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.RenderPhase;
 import net.minecraft.client.render.VertexFormat;
@@ -19,7 +17,13 @@ public class MVShaders {
 	public static record MVShaderProgramKey(String name, VertexFormat vertexFormat, Object mcKey) {
 		public MVShaderProgramKey(String name, VertexFormat vertexFormat) {
 			this(name, vertexFormat, Version.newSwitch()
-					.range("1.21.2", null, () -> new ShaderProgramKey(IdentifierInst.of("minecraft", "core/" + name), vertexFormat, Defines.EMPTY))
+					.range("1.21.2", null, () -> {
+						Class<?> definesClass = Reflection.getClass("net.minecraft.class_10149");
+						Object definesEmpty = Reflection.getField(definesClass, "field_53930", "Lnet/minecraft/class_10149;").get(null);
+						return Reflection.newInstance(Reflection.getClass("net.minecraft.class_10156"),
+								new Class<?>[] {net.minecraft.util.Identifier.class, VertexFormat.class, definesClass},
+								IdentifierInst.of("minecraft", "core/" + name), vertexFormat, definesEmpty);
+					})
 					.range(null, "1.21.1", () -> null)
 					.get());
 		}
@@ -61,7 +65,9 @@ public class MVShaders {
 	
 	public static RenderPhase.ShaderProgram newRenderPhaseShaderProgram(MVShaderProgram shader) {
 		return Version.<RenderPhase.ShaderProgram>newSwitch()
-				.range("1.21.2", null, () -> new RenderPhase.ShaderProgram((ShaderProgramKey) shader.key.mcKey()))
+				.range("1.21.2", null, () -> Reflection.newInstance(RenderPhase.ShaderProgram.class,
+						new Class<?>[] {Reflection.getClass("net.minecraft.class_10156")},
+						shader.key.mcKey()))
 				.range(null, "1.21.1", () -> Reflection.newInstance(RenderPhase.ShaderProgram.class, new Class<?>[] {Supplier.class}, (Supplier<ShaderProgram>) () -> shader.shader))
 				.get();
 	}

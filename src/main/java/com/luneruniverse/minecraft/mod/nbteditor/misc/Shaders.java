@@ -1,16 +1,17 @@
 package com.luneruniverse.minecraft.mod.nbteditor.misc;
 
+import java.lang.invoke.MethodType;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 
 import com.luneruniverse.minecraft.mod.nbteditor.multiversion.MVShaders;
 import com.luneruniverse.minecraft.mod.nbteditor.multiversion.MVShaders.MVShaderAndLayer;
 import com.luneruniverse.minecraft.mod.nbteditor.multiversion.MVShaders.MVShaderProgram;
 import com.luneruniverse.minecraft.mod.nbteditor.multiversion.MVShaders.MVShaderProgramKey;
+import com.luneruniverse.minecraft.mod.nbteditor.multiversion.Reflection;
 import com.luneruniverse.minecraft.mod.nbteditor.multiversion.Version;
 
-import net.minecraft.client.gl.ShaderProgramKey;
-import net.minecraft.client.gl.ShaderProgramKeys;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.RenderLayer.MultiPhaseParameters;
 import net.minecraft.client.render.RenderPhase;
@@ -19,11 +20,14 @@ import net.minecraft.client.render.VertexFormat;
 public class Shaders {
 	
 	public static final List<MVShaderProgram> SHADERS = new ArrayList<>();
+	private static final Supplier<Reflection.MethodInvoker> ShaderProgramKeys_getAll =
+			Reflection.getOptionalMethod(Reflection.getOptionalClass("net.minecraft.class_10142"), () -> "method_62901", () -> MethodType.methodType(java.util.List.class));
+	@SuppressWarnings("unchecked")
 	public static MVShaderProgram registerShader(MVShaderProgramKey key) {
 		MVShaderProgram shader = new MVShaderProgram(key);
 		SHADERS.add(shader);
 		Version.newSwitch()
-				.range("1.21.2", null, () -> ShaderProgramKeys.getAll().add((ShaderProgramKey) key.mcKey()))
+				.range("1.21.2", null, () -> ((java.util.List<Object>) ShaderProgramKeys_getAll.get().invoke(null)).add(key.mcKey()))
 				.range(null, "1.21.1", () -> {})
 				.run();
 		return shader;

@@ -57,18 +57,22 @@ public class ServerMVMisc {
 	
 	private static final Supplier<Reflection.MethodInvoker> EntityType_create =
 			Reflection.getOptionalMethod(EntityType.class, "method_5883", MethodType.methodType(Entity.class, World.class));
+	private static final Supplier<Reflection.MethodInvoker> EntityType_create_withReason =
+			Reflection.getOptionalMethod(EntityType.class, "method_5883", MethodType.methodType(Entity.class, World.class, SpawnReason.class));
 	public static Entity createEntity(EntityType<?> entityType, World world) {
 		return Version.<Entity>newSwitch()
-				.range("1.21.2", null, () -> entityType.create(world, SpawnReason.COMMAND))
+				.range("1.21.2", null, () -> EntityType_create_withReason.get().invoke(entityType, world, SpawnReason.COMMAND))
 				.range(null, "1.21.1", () -> EntityType_create.get().invoke(entityType, world))
 				.get();
 	}
 	
 	private static final Supplier<Reflection.MethodInvoker> Entity_hasPermissionLevel =
 			Reflection.getOptionalMethod(Entity.class, "method_5687", MethodType.methodType(boolean.class, int.class));
+	private static final Supplier<Reflection.MethodInvoker> PlayerEntity_hasPermissionLevel_1_21_2 =
+			Reflection.getOptionalMethod(PlayerEntity.class, "method_64475", MethodType.methodType(boolean.class, int.class));
 	public static boolean hasPermissionLevel(PlayerEntity player, int level) {
 		return Version.<Boolean>newSwitch()
-				.range("1.21.2", null, () -> player.hasPermissionLevel(level))
+				.range("1.21.2", null, () -> PlayerEntity_hasPermissionLevel_1_21_2.get().invoke(player, level))
 				.range(null, "1.21.1", () -> Entity_hasPermissionLevel.get().invoke(player, level))
 				.get();
 	}
@@ -77,7 +81,7 @@ public class ServerMVMisc {
 			Reflection.getOptionalMethod(Property.class, "method_11898", MethodType.methodType(Collection.class));
 	public static <T extends Comparable<T>> Collection<T> getValues(Property<T> property) {
 		return Version.<Collection<T>>newSwitch()
-				.range("1.21.2", null, () -> property.getValues())
+				.range("1.21.2", null, () -> Property_getValues.get().invoke(property))
 				.range(null, "1.21.1", () -> Property_getValues.get().invoke(property))
 				.get();
 	}

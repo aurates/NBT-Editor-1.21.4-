@@ -140,9 +140,14 @@ public class MVDrawableHelper {
 			Reflection.getOptionalMethod(GameRenderer.class, "method_34542", MethodType.methodType(ShaderProgram.class));
 	private static final Supplier<Reflection.MethodInvoker> RenderSystem_setShader =
 			Reflection.getOptionalMethod(RenderSystem.class, "setShader", MethodType.methodType(void.class, Supplier.class));
+	private static final Supplier<Reflection.MethodInvoker> RenderLayer_getGuiTextured =
+			Reflection.getOptionalMethod(RenderLayer.class, "method_62277", MethodType.methodType(RenderLayer.class, Identifier.class));
 	public static void drawTexture(MatrixStack matrices, Identifier texture, int x, int y, float u, float v, int width, int height, int textureWidth, int textureHeight) {
 		Version.newSwitch()
-				.range("1.21.2", null, () -> getDrawContext(matrices).drawTexture(RenderLayer::getGuiTextured, texture, x, y, u, v, width, height, textureWidth, textureHeight))
+				.range("1.21.2", null, () -> {
+					java.util.function.Function<Identifier, RenderLayer> guiTextured = id -> RenderLayer_getGuiTextured.get().invoke(null, id);
+					getDrawContext(matrices).drawTexture(guiTextured, texture, x, y, u, v, width, height, textureWidth, textureHeight);
+				})
 				.range("1.20.0", "1.21.1", () -> DrawContext_drawTexture.get().invoke(getDrawContext(matrices), texture, x, y, u, v, width, height, textureWidth, textureHeight))
 				.range(null, "1.19.4", () -> {
 					RenderSystem_setShader.get().invoke(null, (Supplier<ShaderProgram>) () -> GameRenderer_getPositionTexProgram.get().invoke(null));

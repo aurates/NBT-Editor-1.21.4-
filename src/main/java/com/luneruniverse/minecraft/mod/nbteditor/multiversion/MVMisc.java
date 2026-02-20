@@ -109,7 +109,6 @@ import net.minecraft.util.crash.CrashReportSection;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.util.profiler.Profiler;
-import net.minecraft.util.profiler.Profilers;
 import net.minecraft.world.BlockRenderView;
 
 public class MVMisc {
@@ -520,10 +519,12 @@ public class MVMisc {
 			Reflection.getOptionalMethod(SpawnEggItem.class, "method_8015", MethodType.methodType(EntityType.class, NbtCompound.class));
 	private static final Supplier<Reflection.MethodInvoker> SpawnEggItem_getEntityType_ItemStack =
 			Reflection.getOptionalMethod(SpawnEggItem.class, "method_8015", MethodType.methodType(EntityType.class, ItemStack.class));
+	private static final Supplier<Reflection.MethodInvoker> SpawnEggItem_getEntityType_WrapperLookup_ItemStack =
+			Reflection.getOptionalMethod(SpawnEggItem.class, "method_8015", MethodType.methodType(EntityType.class, net.minecraft.registry.RegistryWrapper.WrapperLookup.class, ItemStack.class));
 	public static EntityType<?> getEntityType(ItemStack item) {
 		SpawnEggItem spawnEggItem = (SpawnEggItem) item.getItem();
 		return Version.<EntityType<?>>newSwitch()
-				.range("1.21.4", null, () -> spawnEggItem.getEntityType(DynamicRegistryManagerHolder.get(), item))
+				.range("1.21.4", null, () -> SpawnEggItem_getEntityType_WrapperLookup_ItemStack.get().invoke(spawnEggItem, DynamicRegistryManagerHolder.get(), item))
 				.range("1.20.5", "1.21.3", () -> SpawnEggItem_getEntityType_ItemStack.get().invoke(spawnEggItem, item))
 				.range(null, "1.20.4", () -> SpawnEggItem_getEntityType_NbtCompound.get().invoke(spawnEggItem, item.manager$getNbt()))
 				.get();
@@ -670,9 +671,11 @@ public class MVMisc {
 	
 	private static final Supplier<Reflection.MethodInvoker> TooltipComponent_getHeight =
 			Reflection.getOptionalMethod(TooltipComponent.class, "method_32661", MethodType.methodType(int.class));
+	private static final Supplier<Reflection.MethodInvoker> TooltipComponent_getHeight_1_21_2 =
+			Reflection.getOptionalMethod(TooltipComponent.class, "method_32661", MethodType.methodType(int.class, net.minecraft.client.font.TextRenderer.class));
 	public static int getTooltipComponentHeight(TooltipComponent line) {
 		return Version.<Integer>newSwitch()
-				.range("1.21.2", null, () -> line.getHeight(MainUtil.client.textRenderer))
+				.range("1.21.2", null, () -> TooltipComponent_getHeight_1_21_2.get().invoke(line, MainUtil.client.textRenderer))
 				.range(null, "1.21.1", () -> TooltipComponent_getHeight.get().invoke(line))
 				.get();
 	}
@@ -681,7 +684,8 @@ public class MVMisc {
 			Reflection.getOptionalMethod(Entity.class, "method_5671", MethodType.methodType(ServerCommandSource.class));
 	public static ServerCommandSource getCommandSource(Entity entity) {
 		return Version.<ServerCommandSource>newSwitch()
-				.range("1.21.2", null, () -> new ServerCommandSource(
+				.range("1.21.2", null, () -> Reflection.newInstance(ServerCommandSource.class,
+						new Class<?>[] {net.minecraft.server.command.CommandOutput.class, net.minecraft.util.math.Vec3d.class, net.minecraft.util.math.Vec2f.class, net.minecraft.server.world.ServerWorld.class, int.class, String.class, net.minecraft.text.Text.class, net.minecraft.server.MinecraftServer.class, Entity.class},
 						CommandOutput.DUMMY, entity.getPos(), entity.getRotationClient(), null, 0,
 						entity.getName().getString(), entity.getDisplayName(), null, entity))
 				.range(null, "1.21.1", () -> Entity_getCommandSource.get().invoke(entity))
@@ -690,25 +694,29 @@ public class MVMisc {
 	
 	private static final Supplier<Reflection.MethodInvoker> MinecraftClient_getProfiler =
 			Reflection.getOptionalMethod(MinecraftClient.class, "method_16011", MethodType.methodType(Profiler.class));
+	private static final Supplier<Reflection.MethodInvoker> Profilers_get =
+			Reflection.getOptionalMethod(Reflection.getOptionalClass("net.minecraft.class_10209"), () -> "method_64146", () -> MethodType.methodType(Profiler.class));
 	public static Profiler getProfiler() {
 		return Version.<Profiler>newSwitch()
-				.range("1.21.2", null, () -> Profilers.get())
+				.range("1.21.2", null, () -> Profilers_get.get().invoke(null))
 				.range(null, "1.21.1", () -> MinecraftClient_getProfiler.get().invoke(MainUtil.client))
 				.get();
 	}
 	
 	public static PotionContentsComponent newPotionContentsComponent(Optional<RegistryEntry<Potion>> potion, Optional<Integer> customColor, List<StatusEffectInstance> customEffects) {
 		return Version.<PotionContentsComponent>newSwitch()
-				.range("1.21.2", null, () -> new PotionContentsComponent(potion, customColor, customEffects, Optional.empty()))
+				.range("1.21.2", null, () -> Reflection.newInstance(PotionContentsComponent.class, new Class<?>[] {Optional.class, Optional.class, List.class, Optional.class}, potion, customColor, customEffects, Optional.empty()))
 				.range(null, "1.21.1", () -> Reflection.newInstance(PotionContentsComponent.class, new Class<?>[] {Optional.class, Optional.class, List.class}, potion, customColor, customEffects))
 				.get();
 	}
 	
 	private static final Supplier<Reflection.MethodInvoker> EntityRenderDispatcher_render =
 			Reflection.getOptionalMethod(EntityRenderDispatcher.class, "method_3954", MethodType.methodType(void.class, Entity.class, double.class, double.class, double.class, float.class, float.class, MatrixStack.class, VertexConsumerProvider.class, int.class));
+	private static final Supplier<Reflection.MethodInvoker> EntityRenderDispatcher_render_1_21_2 =
+			Reflection.getOptionalMethod(EntityRenderDispatcher.class, "method_62424", MethodType.methodType(void.class, Entity.class, double.class, double.class, double.class, float.class, MatrixStack.class, VertexConsumerProvider.class, int.class));
 	public static void renderEntity(EntityRenderDispatcher dispatcher, Entity entity, double x, double y, double z, float yaw, float tickDelta, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light) {
 		Version.newSwitch()
-				.range("1.21.2", null, () -> dispatcher.render(entity, x, y, z, tickDelta, matrices, vertexConsumers, light))
+				.range("1.21.2", null, () -> EntityRenderDispatcher_render_1_21_2.get().invoke(dispatcher, entity, x, y, z, tickDelta, matrices, vertexConsumers, light))
 				.range(null, "1.21.1", () -> EntityRenderDispatcher_render.get().invoke(dispatcher, entity, x, y, z, yaw, tickDelta, matrices, vertexConsumers, light))
 				.run();
 	}
@@ -766,9 +774,11 @@ public class MVMisc {
 	
 	private static final Supplier<Reflection.MethodInvoker> Item_getName =
 			Reflection.getOptionalMethod(Item.class, "method_7848", MethodType.methodType(Text.class));
+	private static final Supplier<Reflection.MethodInvoker> Item_getName_1_21_2 =
+			Reflection.getOptionalMethod(Item.class, "method_63680", MethodType.methodType(Text.class));
 	public static Text getName(Item item) {
 		return Version.<Text>newSwitch()
-				.range("1.21.2", null, () -> item.getName())
+				.range("1.21.2", null, () -> Item_getName_1_21_2.get().invoke(item))
 				.range(null, "1.21.1", () -> Item_getName.get().invoke(item))
 				.get();
 	}
