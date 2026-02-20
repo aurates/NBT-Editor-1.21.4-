@@ -1,9 +1,5 @@
-# Automatically build the project and run any configured tests for every push
-# and submitted pull request. This can help catch issues that only occur on
-# certain platforms or Java versions, and provides a first line of defence
-# against bad commits.
-
 name: build
+
 on:
   pull_request:
   push:
@@ -12,41 +8,63 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-24.04
+
     steps:
       - name: checkout repository
         uses: actions/checkout@v4
         with:
           ref: ${{ github.head_ref || github.ref_name }}
+          fetch-depth: 0
+
       - name: validate gradle wrapper
         uses: gradle/actions/wrapper-validation@v4
+
       - name: setup jdk
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'microsoft'
+          cache: gradle
+
       - name: make gradle wrapper executable
         run: chmod +x ./gradlew
-      - name: build
-        run: ./gradlew build
+
+      - name: diagnostics
+        run: |
+          java -version
+          ./gradlew --version
+
+      - name: build (with stacktrace)
+        run: ./gradlew build --stacktrace --info
+
       - name: capture build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: Artifacts
+          if-no-files-found: error
           path: |
             build/libs/nbteditor-*-*.jar
             build/devlibs/nbteditor-*-*-dev.jar
+
       - name: copy jar to project root
         if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         run: |
+          set -euo pipefail
           JAR=$(ls build/libs/nbteditor-*-*.jar | grep -v dev | head -1)
           cp "$JAR" nbteditor-1.21.1.jar
           echo "Copied $JAR to nbteditor-1.21.1.jar"
+
       - name: commit jar to repository
         if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         run: |
+          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add nbteditor-1.21.1.jar
